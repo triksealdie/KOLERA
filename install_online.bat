@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-:: Debe ejecutarse como admin (para hosts y setx /M)
+:: Requiere admin (hosts y setx /M)
 net session >nul 2>&1
 if errorlevel 1 (
   echo Ejecuta este instalador como administrador.
@@ -14,66 +14,36 @@ set "URL_EXE=https://github.com/triksealdie/KOLERA/releases/latest/download/kole
 set "URL_PANEL=https://github.com/triksealdie/KOLERA/releases/latest/download/config_panel.zip"
 set "PANEL_URL=http://kolera.rad/"
 set "PORT=80"
-set /a TOTAL=6, STEP=0
+set /a TOTAL=6
+set /a STEP=0
 
 call :brand
-
-:step
-set /a STEP+=1
-set /a PCT=STEP*100/TOTAL
-set "BAR===================="
-set "SPACE                    "
-set /a FILL=STEP*20/TOTAL
-set /a GAP=20-FILL
-set "OUT=[!BAR:~0,%FILL%!!SPACE:~0,%GAP%!]^| !PCT!%%    !MSG!"
-cls
-call :brand
-echo !OUT!
-echo.
-goto :eof
-
-:brand
-echo.
-echo ███████╗ ██████╗ ██╗      ███████╗██████╗  █████╗
-echo ██╔════╝██╔═══██╗██║      ██╔════╝██╔══██╗██╔══██╗
-echo █████╗  ██║   ██║██║█████╗█████╗  ██████╔╝███████║
-echo ██╔══╝  ██║   ██║██║╚════╝██╔══╝  ██╔══██╗██╔══██║
-echo ██║     ╚██████╔╝███████╗ ███████╗██║  ██║██║  ██║
-echo ╚═╝      ╚═════╝ ╚══════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝
-echo                Instalador Kolera
-echo.
-goto :eof
-
-set "MSG=Preparando..."
+call :step "Preparando directorio"
 if not exist "%BASE%" mkdir "%BASE%"
 attrib +h "%BASE%" 2>nul
-call :step
 
-set "MSG=Descargando exe"
+call :step "Descargando ejecutable"
 powershell -NoLogo -NoProfile -Command ^
   "$ProgressPreference='SilentlyContinue';" ^
   "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;" ^
   "$url='%URL_EXE%'; $out='%BASE%\\kolera.exe';" ^
   "for($i=0;$i -lt 4;$i++){try{Invoke-WebRequest $url -OutFile $out -UseBasicParsing -ErrorAction Stop; exit 0}catch{Start-Sleep -Seconds 3}}; exit 1"
 if errorlevel 1 goto :fail
-call :step
 
-set "MSG=Descargando panel"
+call :step "Descargando panel"
 powershell -NoLogo -NoProfile -Command ^
   "$ProgressPreference='SilentlyContinue';" ^
   "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;" ^
   "$url='%URL_PANEL%'; $out='%BASE%\\config_panel.zip';" ^
   "for($i=0;$i -lt 4;$i++){try{Invoke-WebRequest $url -OutFile $out -UseBasicParsing -ErrorAction Stop; exit 0}catch{Start-Sleep -Seconds 3}}; exit 1"
 if errorlevel 1 goto :fail
-call :step
 
-set "MSG=Descomprimiendo"
+call :step "Descomprimiendo panel"
 powershell -NoLogo -NoProfile -Command ^
   "Expand-Archive '%BASE%\\config_panel.zip' -DestinationPath '%BASE%\\config_panel' -Force"
 del "%BASE%\\config_panel.zip" 2>nul
-call :step
 
-set "MSG=Configurando"
+call :step "Aplicando sistema"
 powershell -NoLogo -NoProfile -Command ^
   "$hosts=[IO.Path]::Combine($env:SystemRoot,'System32','drivers','etc','hosts');" ^
   "$line='127.0.0.1 kolera.rad';" ^
@@ -81,9 +51,8 @@ powershell -NoLogo -NoProfile -Command ^
 setx KOLERA_PANEL_URL "%PANEL_URL%" /M >nul
 setx PORT "%PORT%" /M >nul
 setx KOLERA_BASE_DIR "%BASE%" /M >nul
-call :step
 
-set "MSG=Finalizando"
+call :step "Creando config y accesos"
 powershell -NoLogo -NoProfile -Command ^
   "$cfgDir='%BASE%\\config';" ^
   "New-Item -ItemType Directory -Path $cfgDir -Force >$null;" ^
@@ -115,7 +84,8 @@ powershell -NoLogo -NoProfile -Command ^
   "$lnk.WorkingDirectory='%WORKDIR%';" ^
   "$lnk.IconLocation='%TARGET%,0';" ^
   "$lnk.Save();"
-call :step
+
+call :step "Listo"
 
 echo.
 echo Instalacion completada. Se lanzara Kolera...
@@ -131,3 +101,29 @@ echo.
 echo [X] Error descargando. Revisa tu conexion o GitHub.
 pause
 exit /b 1
+
+:step
+set /a STEP+=1
+set "MSG=%~1"
+set /a PCT=STEP*100/TOTAL
+set "BAR===================="
+set "SPACE                    "
+set /a FILL=STEP*20/TOTAL
+set /a GAP=20-FILL
+set "OUT=[!BAR:~0,%FILL%!!SPACE:~0,%GAP%!]^| !PCT!%%    !MSG!"
+cls
+call :brand
+echo !OUT!
+echo.
+goto :eof
+
+:brand
+echo.
+echo  _  __     ___      ___  _____  ____    _       
+echo ^| ^|/ /__ _/ _ ^|__  / _ \\^|_   _^|/ ___^|  (_) ___  
+echo ^| ' // _` ^| ^| ^| \\ \\/ /_)/ ^|^| ^|  ^| \\___ \\  ^| ^|/ _ \\ 
+echo ^| . \\ (_^| ^| ^|_^| |>  < ___/^|^| ^|__^| ^|___) ^| ^| ^| (_) ^
+echo ^|_^|\\_\\__,_^|\\___//_/\\_\\    ^|_____^|^|____/^|_^|_^|\\___/ 
+echo             Instalador Kolera
+echo.
+goto :eof
