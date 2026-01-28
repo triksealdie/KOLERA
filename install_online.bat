@@ -121,8 +121,9 @@ echo.
 echo Instalacion completada. Se lanzara Kolera...
 timeout /t 2 >nul
 start "" "%LAUNCH%"
-echo Cierra esta ventana si ya se abrio Kolera.
-pause >nul
+echo.
+echo Presiona una tecla para cerrar esta ventana cuando confirmes que Kolera abrio bien.
+pause
 exit /b 0
 
 :fail
