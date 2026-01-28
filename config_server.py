@@ -166,7 +166,9 @@ def _apply_live_config():
         cfg, _ = ks.load_config_local(ks._LOCAL_CONFIG_PATH)
         ks.apply_config(cfg)
         try:
-            ks.print_banner()
+            # clear_screen ya está parcheado para reimprimir el banner
+            if hasattr(ks, "clear_screen"):
+                ks.clear_screen()
         except Exception:
             pass
         print(f"[cfg] Aplicada en caliente: tint={cfg.get('tint')} fov_x={cfg.get('fov_x')} fov_y={cfg.get('fov_y')} spd_x={cfg.get('spd_x')} spd_y={cfg.get('spd_y')} trigger={cfg.get('trigger')} toggle={cfg.get('toggle')}")
