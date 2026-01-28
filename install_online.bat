@@ -16,11 +16,7 @@ set "PANEL_URL=http://kolera.rad/"
 set "PORT=80"
 set /a TOTAL=6, STEP=0
 
-cls
-echo ╔══════════════════╗
-echo ║      K O L E R A ║
-echo ╚══════════════════╝
-echo.
+call :brand
 
 :step
 set /a STEP+=1
@@ -29,8 +25,23 @@ set "BAR===================="
 set "SPACE                    "
 set /a FILL=STEP*20/TOTAL
 set /a GAP=20-FILL
-set "OUT=[!BAR:~0,%FILL%!!SPACE:~0,%GAP%!]^| !PCT!%%  !MSG!"
+set "OUT=[!BAR:~0,%FILL%!!SPACE:~0,%GAP%!]^| !PCT!%%    !MSG!"
+cls
+call :brand
 echo !OUT!
+echo.
+goto :eof
+
+:brand
+echo.
+echo ███████╗ ██████╗ ██╗      ███████╗██████╗  █████╗
+echo ██╔════╝██╔═══██╗██║      ██╔════╝██╔══██╗██╔══██╗
+echo █████╗  ██║   ██║██║█████╗█████╗  ██████╔╝███████║
+echo ██╔══╝  ██║   ██║██║╚════╝██╔══╝  ██╔══██╗██╔══██║
+echo ██║     ╚██████╔╝███████╗ ███████╗██║  ██║██║  ██║
+echo ╚═╝      ╚═════╝ ╚══════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝
+echo                Instalador Kolera
+echo.
 goto :eof
 
 set "MSG=Preparando..."
@@ -106,7 +117,12 @@ powershell -NoLogo -NoProfile -Command ^
   "$lnk.Save();"
 call :step
 
+echo.
+echo Instalacion completada. Se lanzara Kolera...
+timeout /t 2 >nul
 start "" "%LAUNCH%"
+echo Cierra esta ventana si ya se abrio Kolera.
+pause >nul
 exit /b 0
 
 :fail
