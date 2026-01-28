@@ -1,33 +1,37 @@
 @echo off
-setlocal EnableDelayedExpansion
+setlocal EnableExtensions EnableDelayedExpansion
 
-:: Comprobar admin; si no, avisar y salir
-net session >nul 2>&1
-if errorlevel 1 (
-  echo Necesitas ejecutar este instalador como administrador.
-  pause
-  exit /b 1
-)
-
+:: --- Config ---
 set "BASE=%LOCALAPPDATA%\Kolera"
 set "HERE=%~dp0"
 set "URL_EXE=https://github.com/triksealdie/KOLERA/releases/latest/download/kolera.exe"
 set "URL_PANEL=https://github.com/triksealdie/KOLERA/releases/latest/download/config_panel.zip"
 set "PANEL_URL=http://kolera.rad/"
 set "PORT=80"
-set /a TOTAL=6
-set /a STEP=0
+set "LOG=%TEMP%\kolera_install.log"
+set /a TOTAL=6, STEP=0
 
-call :brand
-call :step "Preparando directorio"
+:: --- Limpia log y verifica admin con PS (más fiable que net session) ---
+break >"%LOG%"
+powershell -NoLogo -NoProfile -Command ^
+  "if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 1 }"
+if errorlevel 1 (
+  echo Necesitas ejecutar este instalador como administrador.
+  echo Admin check failed >> "%LOG%"
+  pause
+  exit /b 1
+)
+
+call :step "Preparando carpeta"
 if not exist "%BASE%" mkdir "%BASE%"
 attrib +h "%BASE%" 2>nul
 
 call :step "Obteniendo ejecutable"
-if exist "%BASE%\\kolera.exe" (
-  rem ya esta en destino
+if exist "%BASE%\kolera.exe" (
+  echo exe ya presente >> "%LOG%"
 ) else if exist "%HERE%kolera.exe" (
-  copy /y "%HERE%kolera.exe" "%BASE%\\kolera.exe" >nul
+  copy /y "%HERE%kolera.exe" "%BASE%\kolera.exe" >nul
+  echo exe copiado desde HERE >> "%LOG%"
 ) else (
   powershell -NoLogo -NoProfile -Command ^
     "$ProgressPreference='SilentlyContinue';" ^
@@ -35,13 +39,15 @@ if exist "%BASE%\\kolera.exe" (
     "$url='%URL_EXE%'; $out='%BASE%\\kolera.exe';" ^
     "for($i=0;$i -lt 4;$i++){try{Invoke-WebRequest $url -OutFile $out -UseBasicParsing -ErrorAction Stop; exit 0}catch{Start-Sleep -Seconds 3}}; exit 1"
   if errorlevel 1 goto :fail
+  echo exe descargado >> "%LOG%"
 )
 
 call :step "Obteniendo panel"
-if exist "%BASE%\\config_panel\\index.html" (
-  rem ya existe en destino
+if exist "%BASE%\config_panel\index.html" (
+  echo panel ya presente >> "%LOG%"
 ) else if exist "%HERE%config_panel" (
-  xcopy "%HERE%config_panel" "%BASE%\\config_panel" /e /i /y >nul
+  xcopy "%HERE%config_panel" "%BASE%\config_panel\" /e /i /y >nul
+  echo panel copiado desde HERE >> "%LOG%"
 ) else (
   powershell -NoLogo -NoProfile -Command ^
     "$ProgressPreference='SilentlyContinue';" ^
@@ -52,9 +58,8 @@ if exist "%BASE%\\config_panel\\index.html" (
   powershell -NoLogo -NoProfile -Command ^
     "Expand-Archive '%BASE%\\config_panel.zip' -DestinationPath '%BASE%\\config_panel' -Force"
   del "%BASE%\\config_panel.zip" 2>nul
+  echo panel descargado >> "%LOG%"
 )
-
-call :step "Verificando panel"
 
 call :step "Aplicando sistema"
 powershell -NoLogo -NoProfile -Command ^
@@ -73,10 +78,10 @@ powershell -NoLogo -NoProfile -Command ^
   "$json=$cfg | ConvertTo-Json -Depth 6;" ^
   "Set-Content -LiteralPath (Join-Path $cfgDir 'local_config.json') -Value $json -Encoding UTF8"
 
-set "TARGET=%BASE%\\kolera.exe"
+set "TARGET=%BASE%\kolera.exe"
 set "WORKDIR=%BASE%"
-set "LAUNCH=%BASE%\\run_kolera.bat"
-set "LNK=%USERPROFILE%\\Desktop\\Kolera.lnk"
+set "LAUNCH=%BASE%\run_kolera.bat"
+set "LNK=%USERPROFILE%\Desktop\Kolera.lnk"
 
 (
   echo @echo off
@@ -105,13 +110,15 @@ echo Instalacion completada. Se lanzara Kolera...
 timeout /t 2 >nul
 start "" "%LAUNCH%"
 echo.
+echo Log: %LOG%
 echo Presiona una tecla para cerrar esta ventana cuando confirmes que Kolera abrio bien.
 pause
 exit /b 0
 
 :fail
 echo.
-echo [X] Error descargando. Revisa tu conexion o GitHub.
+echo [X] Error descargando. Revisa conexion o GitHub.
+echo Falla de descarga >> "%LOG%"
 pause
 exit /b 1
 
@@ -119,11 +126,10 @@ exit /b 1
 set /a STEP+=1
 set "MSG=%~1"
 set /a PCT=STEP*100/TOTAL
-set "BAR===================="
-set "SPACE                    "
+set "BAR=####################"
 set /a FILL=STEP*20/TOTAL
 set /a GAP=20-FILL
-set "OUT=[!BAR:~0,%FILL%!!SPACE:~0,%GAP%!]^| !PCT!%%    !MSG!"
+set "OUT=[!BAR:~0,%FILL%!!BAR:~0,%GAP%!] !PCT!%%  !MSG!"
 cls
 call :brand
 echo !OUT!
@@ -131,12 +137,6 @@ echo.
 goto :eof
 
 :brand
-echo.
-echo  _  __     ___      ___  _____  ____    _       
-echo ^| ^|/ /__ _/ _ ^|__  / _ \\^|_   _^|/ ___^|  (_) ___  
-echo ^| ' // _` ^| ^| ^| \\ \\/ /_)/ ^|^| ^|  ^| \\___ \\  ^| ^|/ _ \\ 
-echo ^| . \\ (_^| ^| ^|_^| |>  < ___/^|^| ^|__^| ^|___) ^| ^| ^| (_) ^
-echo ^|_^|\\_\\__,_^|\\___//_/\\_\\    ^|_____^|^|____/^|_^|_^|\\___/ 
-echo             Instalador Kolera
-echo.
+echo Kolera Installer
+echo ----------------
 goto :eof
