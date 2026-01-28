@@ -79,20 +79,19 @@ DEFAULT_PROFILE = {
 
 DEFAULT_CONFIG = {"activeProfile": 0, "profiles": [DEFAULT_PROFILE]}
 BANNER_LINES = [
-    " +--------------------------------------+",
-    " |               KOLERA                |",
-    " +--------------------------------------+",
-    "",
+    "██╗  ██╗ ██████╗ ██╗     ███████╗██████╗  █████╗ ",
+    "██║ ██╔╝██╔═══██╗██║     ██╔════╝██╔══██╗██╔══██╗",
+    "█████╔╝ ██║   ██║██║     █████╗  ██████╔╝███████║",
+    "██╔═██╗ ██║   ██║██║     ██╔══╝  ██╔══██╗██╔══██║",
+    "██║  ██╗╚██████╔╝███████╗███████╗██║  ██║██║  ██║",
+    "╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝",
 ]
 
 
 def _render_banner():
     """Reimprime un banner simple sin depender del exe."""
     try:
-        os.system("cls")
-    except Exception:
-        pass
-    try:
+        print()
         print("\n".join(BANNER_LINES))
     except Exception:
         pass
