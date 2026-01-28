@@ -51,7 +51,7 @@ del "%BASE%\\config_panel.zip" 2>nul
 
 echo Configurando hosts...
 powershell -NoLogo -NoProfile -Command ^
-  "$hosts='$env:SystemRoot\\System32\\drivers\\etc\\hosts';" ^
+  "$hosts=[IO.Path]::Combine($env:SystemRoot,'System32','drivers','etc','hosts');" ^
   "$line='127.0.0.1 kolera.rad';" ^
   "if(-not (Get-Content $hosts -ErrorAction SilentlyContinue | Select-String -SimpleMatch $line)){Add-Content -Path $hosts -Value $line}"
 
