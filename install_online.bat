@@ -1,8 +1,9 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-:: Auto-elevate si no es admin
-net session >nul 2>&1
+:: Comprobar si ya somos admin; si no, auto-elevar
+powershell -NoLogo -NoProfile -Command ^
+  "if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 1 }"
 if errorlevel 1 (
   echo Solicitando permisos de administrador...
   powershell -NoLogo -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
