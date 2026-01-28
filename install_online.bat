@@ -1,7 +1,14 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-:: --- Config ---
+:: Chequeo de admin sin relanzar (más compatible)
+whoami /groups | find "S-1-5-32-544" >nul
+if errorlevel 1 (
+  echo Necesitas ejecutar este instalador como administrador.
+  pause
+  goto :eof
+)
+
 set "BASE=%LOCALAPPDATA%\Kolera"
 set "HERE=%~dp0"
 set "URL_EXE=https://github.com/triksealdie/KOLERA/releases/latest/download/kolera.exe"
@@ -10,17 +17,7 @@ set "PANEL_URL=http://kolera.rad/"
 set "PORT=80"
 set "LOG=%TEMP%\kolera_install.log"
 set /a TOTAL=6, STEP=0
-
-:: --- Limpia log y verifica admin con PS (más fiable que net session) ---
 break >"%LOG%"
-powershell -NoLogo -NoProfile -Command ^
-  "if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 1 }"
-if errorlevel 1 (
-  echo Necesitas ejecutar este instalador como administrador.
-  echo Admin check failed >> "%LOG%"
-  pause
-  exit /b 1
-)
 
 call :step "Preparando carpeta"
 if not exist "%BASE%" mkdir "%BASE%"
@@ -111,16 +108,15 @@ timeout /t 2 >nul
 start "" "%LAUNCH%"
 echo.
 echo Log: %LOG%
-echo Presiona una tecla para cerrar esta ventana cuando confirmes que Kolera abrio bien.
 pause
-exit /b 0
+goto :eof
 
 :fail
 echo.
 echo [X] Error descargando. Revisa conexion o GitHub.
 echo Falla de descarga >> "%LOG%"
 pause
-exit /b 1
+goto :eof
 
 :step
 set /a STEP+=1
@@ -131,12 +127,8 @@ set /a FILL=STEP*20/TOTAL
 set /a GAP=20-FILL
 set "OUT=[!BAR:~0,%FILL%!!BAR:~0,%GAP%!] !PCT!%%  !MSG!"
 cls
-call :brand
-echo !OUT!
-echo.
-goto :eof
-
-:brand
 echo Kolera Installer
 echo ----------------
+echo !OUT!
+echo.
 goto :eof
