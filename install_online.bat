@@ -1,16 +1,16 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-:: Comprobar si ya somos admin; si no, auto-elevar
-powershell -NoLogo -NoProfile -Command ^
-  "if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 1 }"
+:: Comprobar admin; si no, avisar y salir
+net session >nul 2>&1
 if errorlevel 1 (
-  echo Solicitando permisos de administrador...
-  powershell -NoLogo -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
-  exit /b
+  echo Necesitas ejecutar este instalador como administrador.
+  pause
+  exit /b 1
 )
 
 set "BASE=%LOCALAPPDATA%\Kolera"
+set "HERE=%~dp0"
 set "URL_EXE=https://github.com/triksealdie/KOLERA/releases/latest/download/kolera.exe"
 set "URL_PANEL=https://github.com/triksealdie/KOLERA/releases/latest/download/config_panel.zip"
 set "PANEL_URL=http://kolera.rad/"
@@ -23,26 +23,38 @@ call :step "Preparando directorio"
 if not exist "%BASE%" mkdir "%BASE%"
 attrib +h "%BASE%" 2>nul
 
-call :step "Descargando ejecutable"
-powershell -NoLogo -NoProfile -Command ^
-  "$ProgressPreference='SilentlyContinue';" ^
-  "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;" ^
-  "$url='%URL_EXE%'; $out='%BASE%\\kolera.exe';" ^
-  "for($i=0;$i -lt 4;$i++){try{Invoke-WebRequest $url -OutFile $out -UseBasicParsing -ErrorAction Stop; exit 0}catch{Start-Sleep -Seconds 3}}; exit 1"
-if errorlevel 1 goto :fail
+call :step "Obteniendo ejecutable"
+if exist "%BASE%\\kolera.exe" (
+  rem ya esta en destino
+) else if exist "%HERE%kolera.exe" (
+  copy /y "%HERE%kolera.exe" "%BASE%\\kolera.exe" >nul
+) else (
+  powershell -NoLogo -NoProfile -Command ^
+    "$ProgressPreference='SilentlyContinue';" ^
+    "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;" ^
+    "$url='%URL_EXE%'; $out='%BASE%\\kolera.exe';" ^
+    "for($i=0;$i -lt 4;$i++){try{Invoke-WebRequest $url -OutFile $out -UseBasicParsing -ErrorAction Stop; exit 0}catch{Start-Sleep -Seconds 3}}; exit 1"
+  if errorlevel 1 goto :fail
+)
 
-call :step "Descargando panel"
-powershell -NoLogo -NoProfile -Command ^
-  "$ProgressPreference='SilentlyContinue';" ^
-  "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;" ^
-  "$url='%URL_PANEL%'; $out='%BASE%\\config_panel.zip';" ^
-  "for($i=0;$i -lt 4;$i++){try{Invoke-WebRequest $url -OutFile $out -UseBasicParsing -ErrorAction Stop; exit 0}catch{Start-Sleep -Seconds 3}}; exit 1"
-if errorlevel 1 goto :fail
+call :step "Obteniendo panel"
+if exist "%BASE%\\config_panel\\index.html" (
+  rem ya existe en destino
+) else if exist "%HERE%config_panel" (
+  xcopy "%HERE%config_panel" "%BASE%\\config_panel" /e /i /y >nul
+) else (
+  powershell -NoLogo -NoProfile -Command ^
+    "$ProgressPreference='SilentlyContinue';" ^
+    "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;" ^
+    "$url='%URL_PANEL%'; $out='%BASE%\\config_panel.zip';" ^
+    "for($i=0;$i -lt 4;$i++){try{Invoke-WebRequest $url -OutFile $out -UseBasicParsing -ErrorAction Stop; exit 0}catch{Start-Sleep -Seconds 3}}; exit 1"
+  if errorlevel 1 goto :fail
+  powershell -NoLogo -NoProfile -Command ^
+    "Expand-Archive '%BASE%\\config_panel.zip' -DestinationPath '%BASE%\\config_panel' -Force"
+  del "%BASE%\\config_panel.zip" 2>nul
+)
 
-call :step "Descomprimiendo panel"
-powershell -NoLogo -NoProfile -Command ^
-  "Expand-Archive '%BASE%\\config_panel.zip' -DestinationPath '%BASE%\\config_panel' -Force"
-del "%BASE%\\config_panel.zip" 2>nul
+call :step "Verificando panel"
 
 call :step "Aplicando sistema"
 powershell -NoLogo -NoProfile -Command ^
