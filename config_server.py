@@ -91,7 +91,6 @@ BANNER_LINES = [
 def _render_banner():
     """Reimprime un banner simple sin depender del exe."""
     try:
-        print()
         print("\n".join(BANNER_LINES))
     except Exception:
         pass
@@ -334,8 +333,7 @@ def _patch_kolera_loaders():
 
 def _patch_brand():
     """
-    Evita que el ASCII de Kolera desaparezca tras clear_screen/toggles.
-    Sustituye clear_screen por una versiÃ³n que reimprime el banner.
+    Forzamos clear_screen y print_banner a usar nuestro banner personalizado.
     """
     try:
         import kolera_skr as ks
@@ -343,18 +341,19 @@ def _patch_brand():
         return
     if getattr(ks, "_PATCHED_BRAND", False):
         return
-    if not hasattr(ks, "clear_screen") or not hasattr(ks, "print_banner"):
-        return
-    _orig_clear = ks.clear_screen
 
-    def _clear_and_brand():
-        _orig_clear()
+    def _custom_banner():
+        _render_banner()
+
+    def _custom_clear():
         try:
-            ks.print_banner()
+            os.system("cls" if os.name == "nt" else "clear")
         except Exception:
             pass
+        _render_banner()
 
-    ks.clear_screen = _clear_and_brand
+    ks.print_banner = _custom_banner
+    ks.clear_screen = _custom_clear
     ks._PATCHED_BRAND = True
 
 
