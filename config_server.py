@@ -78,6 +78,24 @@ DEFAULT_PROFILE = {
 }
 
 DEFAULT_CONFIG = {"activeProfile": 0, "profiles": [DEFAULT_PROFILE]}
+BANNER_LINES = [
+    " +--------------------------------------+",
+    " |               KOLERA                |",
+    " +--------------------------------------+",
+    "",
+]
+
+
+def _render_banner():
+    """Reimprime un banner simple sin depender del exe."""
+    try:
+        os.system("cls")
+    except Exception:
+        pass
+    try:
+        print("\n".join(BANNER_LINES))
+    except Exception:
+        pass
 
 
 def _clamp_int(value, low, high, fallback):
@@ -165,12 +183,7 @@ def _apply_live_config():
         import kolera_skr as ks
         cfg, _ = ks.load_config_local(ks._LOCAL_CONFIG_PATH)
         ks.apply_config(cfg)
-        try:
-            # clear_screen ya está parcheado para reimprimir el banner
-            if hasattr(ks, "clear_screen"):
-                ks.clear_screen()
-        except Exception:
-            pass
+        _render_banner()
         print(f"[cfg] Aplicada en caliente: tint={cfg.get('tint')} fov_x={cfg.get('fov_x')} fov_y={cfg.get('fov_y')} spd_x={cfg.get('spd_x')} spd_y={cfg.get('spd_y')} trigger={cfg.get('trigger')} toggle={cfg.get('toggle')}")
     except Exception as e:
         print(f"[cfg] Error al aplicar en caliente: {e}")
@@ -363,13 +376,7 @@ def _patch_apply_banner():
 
     def _apply_and_brand(cfg):
         res = _orig_apply(cfg)
-        try:
-            if hasattr(ks, "clear_screen"):
-                ks.clear_screen()
-            elif hasattr(ks, "print_banner"):
-                ks.print_banner()
-        except Exception:
-            pass
+        _render_banner()
         return res
 
     ks.apply_config = _apply_and_brand
@@ -399,10 +406,10 @@ def main():
     env_port = os.environ.get("PORT", "80")
     port = 80 if env_port.strip() != "80" else 80
     httpd = HTTPServer(("0.0.0.0", port), Handler)
-    _patch_kolera_loaders()
-    _patch_brand()
-    _patch_apply_banner()
-    _set_panel_url_runtime(port)
+_patch_kolera_loaders()
+_patch_brand()
+_patch_apply_banner()
+_set_panel_url_runtime(port)
     print(f"Config server running on http://127.0.0.1:{port}")
     print("API: GET/POST /api/config, defaults at /api/default, UI served from config_panel/")
     print(f"Writing config to {CONFIG_FILE}")
