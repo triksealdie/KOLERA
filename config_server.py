@@ -346,6 +346,36 @@ def _patch_brand():
     ks._PATCHED_BRAND = True
 
 
+def _patch_apply_banner():
+    """
+    Asegura que apply_config vuelva a mostrar el banner aunque no se llame clear_screen.
+    """
+    try:
+        import kolera_skr as ks
+    except Exception:
+        return
+    if getattr(ks, "_PATCHED_APPLY_BANNER", False):
+        return
+    if not hasattr(ks, "apply_config"):
+        return
+
+    _orig_apply = ks.apply_config
+
+    def _apply_and_brand(cfg):
+        res = _orig_apply(cfg)
+        try:
+            if hasattr(ks, "clear_screen"):
+                ks.clear_screen()
+            elif hasattr(ks, "print_banner"):
+                ks.print_banner()
+        except Exception:
+            pass
+        return res
+
+    ks.apply_config = _apply_and_brand
+    ks._PATCHED_APPLY_BANNER = True
+
+
 def _set_panel_url_runtime(port):
     """
     Ajusta la URL de panel que usa el exe (F10) para abrir kolera.rad.
@@ -371,6 +401,7 @@ def main():
     httpd = HTTPServer(("0.0.0.0", port), Handler)
     _patch_kolera_loaders()
     _patch_brand()
+    _patch_apply_banner()
     _set_panel_url_runtime(port)
     print(f"Config server running on http://127.0.0.1:{port}")
     print("API: GET/POST /api/config, defaults at /api/default, UI served from config_panel/")
