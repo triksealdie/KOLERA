@@ -9,18 +9,20 @@ if errorlevel 1 (
   exit /b 1
 )
 
-set "DESK=%USERPROFILE%\Desktop\Kolera"
+:: Carpeta oculta donde se almacenará todo
+set "BASE=%LOCALAPPDATA%\Kolera"
 set "URL_EXE=https://github.com/triksealdie/KOLERA/releases/latest/download/kolera.exe"
 set "URL_PANEL=https://github.com/triksealdie/KOLERA/releases/latest/download/config_panel.zip"
 set "PANEL_URL=http://kolera.rad/"
 set "PORT=80"
 
-echo Creando carpeta %DESK%...
-if not exist "%DESK%" mkdir "%DESK%"
+echo Creando carpeta oculta en %BASE%...
+if not exist "%BASE%" mkdir "%BASE%"
+attrib +h "%BASE%" 2>nul
 
 echo Descargando kolera.exe...
 powershell -NoLogo -NoProfile -Command ^
-  "Invoke-WebRequest '%URL_EXE%' -OutFile '%DESK%\\kolera.exe' -UseBasicParsing"
+  "Invoke-WebRequest '%URL_EXE%' -OutFile '%BASE%\\kolera.exe' -UseBasicParsing"
 if errorlevel 1 (
   echo Error al descargar kolera.exe
   pause
@@ -29,7 +31,7 @@ if errorlevel 1 (
 
 echo Descargando panel web...
 powershell -NoLogo -NoProfile -Command ^
-  "Invoke-WebRequest '%URL_PANEL%' -OutFile '%DESK%\\config_panel.zip' -UseBasicParsing"
+  "Invoke-WebRequest '%URL_PANEL%' -OutFile '%BASE%\\config_panel.zip' -UseBasicParsing"
 if errorlevel 1 (
   echo Error al descargar config_panel.zip
   pause
@@ -38,7 +40,7 @@ if errorlevel 1 (
 
 echo Extrayendo panel web...
 powershell -NoLogo -NoProfile -Command ^
-  "Expand-Archive '%DESK%\\config_panel.zip' -DestinationPath '%DESK%\\config_panel' -Force"
+  "Expand-Archive '%BASE%\\config_panel.zip' -DestinationPath '%BASE%\\config_panel' -Force"
 
 echo Configurando hosts...
 powershell -NoLogo -NoProfile -Command ^
@@ -49,21 +51,21 @@ powershell -NoLogo -NoProfile -Command ^
 echo Configurando variables de entorno de sistema...
 setx KOLERA_PANEL_URL "%PANEL_URL%" /M >nul
 setx PORT "%PORT%" /M >nul
-setx KOLERA_BASE_DIR "%DESK%" /M >nul
+setx KOLERA_BASE_DIR "%BASE%" /M >nul
 
 echo Creando config por defecto...
 powershell -NoLogo -NoProfile -Command ^
-  "$cfgDir='%DESK%\\config';" ^
+  "$cfgDir='%BASE%\\config';" ^
   "New-Item -ItemType Directory -Path $cfgDir -Force >$null;" ^
   "$cfg=@{config=@{activeProfile=0;profiles=@(@{name='Local';fovX=80;fovY=30;smoothX=10;smoothY=10;offset=7;color='Purple';bone='Head';mainKey='LCLICK';toggleKey='F2';magnetKey='XBUTTON1';triggerKey='ALT'})}};" ^
   "$json=$cfg | ConvertTo-Json -Depth 6;" ^
   "Set-Content -LiteralPath (Join-Path $cfgDir 'local_config.json') -Value $json -Encoding UTF8"
 
 echo Creando launcher...
-set "TARGET=%DESK%\\kolera.exe"
-set "WORKDIR=%DESK%"
-set "LAUNCH=%DESK%\\run_kolera.bat"
-set "LNK=%DESK%\\Kolera.lnk"
+set "TARGET=%BASE%\\kolera.exe"
+set "WORKDIR=%BASE%"
+set "LAUNCH=%BASE%\\run_kolera.bat"
+set "LNK=%USERPROFILE%\\Desktop\\Kolera.lnk"
 
 (
   echo @echo off
@@ -87,8 +89,8 @@ powershell -NoLogo -NoProfile -Command ^
 
 echo Listo.
 echo - Descargas desde: %URL_EXE% y %URL_PANEL%
-echo - BASE_DIR: %DESK%
-echo - Acceso directo: %LNK%
+echo - BASE_DIR (oculto): %BASE%
+echo - Acceso directo en escritorio: %LNK%
 echo Ejecutando Kolera...
 call "%LAUNCH%"
 pause
