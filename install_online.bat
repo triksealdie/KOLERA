@@ -1,12 +1,12 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-:: Requiere admin (hosts y setx /M)
+:: Auto-elevate si no es admin
 net session >nul 2>&1
 if errorlevel 1 (
-  echo Ejecuta este instalador como administrador.
-  pause
-  exit /b 1
+  echo Solicitando permisos de administrador...
+  powershell -NoLogo -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+  exit /b
 )
 
 set "BASE=%LOCALAPPDATA%\Kolera"
