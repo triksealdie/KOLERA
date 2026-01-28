@@ -104,10 +104,11 @@ call :step "Listo"
 
 echo.
 echo Instalacion completada. Se lanzara Kolera...
-timeout /t 2 >nul
-start "" "%LAUNCH%"
+timeout /t 1 >nul
+powershell -NoLogo -NoProfile -Command "Start-Process -FilePath '%TARGET%' -WorkingDirectory '%WORKDIR%' -Verb RunAs"
 echo.
 echo Log: %LOG%
+echo Kolera se lanzo en la misma sesion. Cierra esta ventana cuando termines.
 pause
 goto :eof
 
