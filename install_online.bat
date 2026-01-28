@@ -22,7 +22,10 @@ attrib +h "%BASE%" 2>nul
 
 echo Descargando kolera.exe...
 powershell -NoLogo -NoProfile -Command ^
-  "Invoke-WebRequest '%URL_EXE%' -OutFile '%BASE%\\kolera.exe' -UseBasicParsing"
+  "$ProgressPreference='SilentlyContinue';" ^
+  "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;" ^
+  "$url='%URL_EXE%'; $out='%BASE%\\kolera.exe';" ^
+  "for($i=0;$i -lt 4;$i++){try{Invoke-WebRequest $url -OutFile $out -UseBasicParsing -ErrorAction Stop; exit 0}catch{Start-Sleep -Seconds 3}}; exit 1"
 if errorlevel 1 (
   echo Error al descargar kolera.exe
   pause
@@ -31,7 +34,10 @@ if errorlevel 1 (
 
 echo Descargando panel web...
 powershell -NoLogo -NoProfile -Command ^
-  "Invoke-WebRequest '%URL_PANEL%' -OutFile '%BASE%\\config_panel.zip' -UseBasicParsing"
+  "$ProgressPreference='SilentlyContinue';" ^
+  "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;" ^
+  "$url='%URL_PANEL%'; $out='%BASE%\\config_panel.zip';" ^
+  "for($i=0;$i -lt 4;$i++){try{Invoke-WebRequest $url -OutFile $out -UseBasicParsing -ErrorAction Stop; exit 0}catch{Start-Sleep -Seconds 3}}; exit 1"
 if errorlevel 1 (
   echo Error al descargar config_panel.zip
   pause
@@ -41,6 +47,7 @@ if errorlevel 1 (
 echo Extrayendo panel web...
 powershell -NoLogo -NoProfile -Command ^
   "Expand-Archive '%BASE%\\config_panel.zip' -DestinationPath '%BASE%\\config_panel' -Force"
+del "%BASE%\\config_panel.zip" 2>nul
 
 echo Configurando hosts...
 powershell -NoLogo -NoProfile -Command ^
