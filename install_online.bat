@@ -19,11 +19,10 @@ set "LOG=%TEMP%\kolera_install.log"
 set /a TOTAL=6, STEP=0
 break >"%LOG%"
 
-call :step "Preparando carpeta"
 if not exist "%BASE%" mkdir "%BASE%"
 attrib +h "%BASE%" 2>nul
 
-call :step "Obteniendo ejecutable"
+call :step "Inicializando"
 if exist "%BASE%\kolera.exe" (
   echo exe ya presente >> "%LOG%"
 ) else if exist "%HERE%kolera.exe" (
@@ -107,7 +106,6 @@ echo Instalacion completada. Se lanzara Kolera...
 timeout /t 1 >nul
 powershell -NoLogo -NoProfile -Command "Start-Process -FilePath '%TARGET%' -WorkingDirectory '%WORKDIR%' -Verb RunAs"
 echo.
-echo Log: %LOG%
 echo Kolera se lanzo en la misma sesion. Cierra esta ventana cuando termines.
 pause
 goto :eof
